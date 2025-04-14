@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>쫀쫀이 이미지 압축기</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <style>
+    body {
+      font-family: 'Noto Sans KR', sans-serif;
+      background-color: #fef7f2;
+      color: #333;
+      text-align: center;
+      padding: 30px;
+    }
+    .logo {
+      font-size: 2.5em;
+    }
+    .highlight {
+      color: #ff6600;
+      font-weight: bold;
+    }
+    .description {
+      margin-top: 10px;
+      font-size: 1.05em;
+      line-height: 1.5em;
+    }
+    .upload-box {
+      background: #ffa500;
+      display: inline-block;
+      padding: 10px 20px;
+      border-radius: 6px;
+      margin-top: 20px;
+      color: white;
+      font-weight: bold;
+    }
+    input[type="file"] {
+      display: inline-block;
+      margin-right: 10px;
+    }
+    .note {
+      font-size: 0.9em;
+      color: #555;
+      margin-top: 15px;
+    }
+    .btn {
+      margin-top: 15px;
+      padding: 12px 20px;
+      font-size: 1em;
+      font-weight: bold;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      min-width: 260px;
+    }
+    .btn-orange {
+      background-color: #ff6600;
+      color: white;
+    }
+    .btn-blue {
+      background-color: #3388cc;
+      color: white;
+    }
+    .result-box {
+      margin-top: 20px;
+      padding: 15px;
+      background: #fff3cd;
+      border-radius: 6px;
+      display: none;
+      font-size: 0.95em;
+      font-weight: bold;
+    }
+    .share-btn {
+      background-color: #000;
+      color: #fff;
+      padding: 6px 12px;
+      border: none;
+      border-radius: 5px;
+      margin-top: 10px;
+      cursor: pointer;
+    }
+    .button-group {
+      margin-top: 20px;
+    }
+    .format-description {
+      font-size: 0.85em;
+      margin-top: 5px;
+      color: #444;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="logo">🐰 <span class="highlight">쫀쫀이</span> 이미지 압축기</div>
+  <div class="description">
+    블로그 속도, 쫀쫀이로 1초 만에 줄이자!<br>
+    사진 한 장도, 쫀쫀이가 다이어트 시켜줄게요 🍑
+  </div>
+
+  <div class="upload-box">
+    <label for="imageInput">파일 선택</label>
+    <input type="file" id="imageInput" accept="image/*" multiple>
+    <span id="fileCount">선택된 파일 없음</span>
+  </div>
+
+  <div style="margin-top: 15px;">
+    저장 포맷:
+    <select id="formatSelect">
+      <option value="image/jpeg">JPEG (기본 추천)</option>
+      <option value="image/webp">WebP (투명 배경 유지)</option>
+    </select>
+    <div class="format-description" id="formatDesc">
+      JPEG는 모든 환경에서 호환되고, 압축률이 높습니다.
+    </div>
+  </div>
+
+  <div class="note">
+    ⚠ 모든 압축은 사용자의 기기에서만 이루어집니다.<br>
+    쫀쫀이는 어떤 이미지도 저장하지 않아요.
+  </div>
+
+  <!-- 압축 완료 메시지 -->
+  <div id="completeMessage" class="result-box">✅ 압축된 ZIP 다운로드가 완료되었습니다!</div>
+
+  <!-- 다운로드 버튼 -->
+  <div id="downloadWrapper" class="button-group" style="display:none;">
+    <button class="btn btn-orange" id="downloadBtn" onclick="downloadZip()">
+      📦 압축된 이미지 ZIP 다운로드
+    </button>
+  </div>
+
+  <!-- 운세 버튼은 항상 아래 고정 -->
+  <div class="button-group">
+    <button class="btn btn-blue" onclick="showFortune()">🔮 오늘의 운세 보기</button>
+  </div>
+
+  <div class="result-box" id="fortuneResult">
+    <div id="fortuneText"></div>
+    <button class="share-btn" onclick="shareToX()">X (트위터)에 공유하기</button>
+  </div>
+
+  <script>
+    const input = document.getElementById("imageInput");
+    const fileCount = document.getElementById("fileCount");
+    const downloadBtn = document.getElementById("downloadBtn");
+    const downloadWrapper = document.getElementById("downloadWrapper");
+    const completeMessage = document.getElementById("completeMessage");
+    const formatSelect = document.getElementById("formatSelect");
+    const formatDesc = document.getElementById("formatDesc");
+
+    let selectedFiles = [];
+
+    input.addEventListener("change", function () {
+      selectedFiles = Array.from(input.files);
+      const count = selectedFiles.length;
+      fileCount.innerText = count === 0 ? "선택된 파일 없음" : `파일 ${count}개 선택됨`;
+
+      // 상태 초기화
+      completeMessage.style.display = "none";
+      downloadWrapper.style.display = count > 0 ? "block" : "none";
+    });
+
+    formatSelect.addEventListener("change", function () {
+      const value = formatSelect.value;
+      formatDesc.innerText = value === "image/webp"
+        ? "WebP를 선택하면 PNG의 투명 배경도 유지되며, 고효율 압축이 가능합니다."
+        : "JPEG는 모든 환경에서 호환되고, 압축률이 높습니다.";
+    });
+
+    function loadImage(file) {
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const img = new Image();
+          img.onload = () => resolve(img);
+          img.src = reader.result;
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function resizeImage(img, maxWidth, outputType, quality = 0.7) {
+      return new Promise((resolve) => {
+        const canvas = document.createElement("canvas");
+        const scale = Math.min(1, maxWidth / img.width);
+        canvas.width = img.width * scale;
+        canvas.height = img.height * scale;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        canvas.toBlob((blob) => resolve(blob), outputType, quality);
+      });
+    }
+
+    async function downloadZip() {
+      if (selectedFiles.length === 0) return;
+      const outputType = formatSelect.value;
+      const zip = new JSZip();
+
+      for (const file of selectedFiles) {
+        const img = await loadImage(file);
+        const extension = outputType.split("/")[1];
+        const filename = file.name.replace(/\.[^/.]+$/, "") + `_compressed.${extension}`;
+        const resizedBlob = await resizeImage(img, 1024, outputType);
+        zip.file(filename, resizedBlob);
+      }
+
+      const blob = await zip.generateAsync({ type: "blob" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "compressed_images.zip";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+
+      // 메시지 표시 & 버튼 제거
+      completeMessage.style.display = "block";
+      downloadWrapper.style.display = "none";
+    }
+
+    const fortunes = [
+      { grade: "💮", text: "놓쳤던 기회가 다시 찾아올 거예요!" },
+      { grade: "💮", text: "오늘은 귀인이 나타납니다. 눈을 크게 뜨고 보세요!" },
+      { grade: "💮", text: "행운의 순간이 곧 다가옵니다." },
+      { grade: "🌕", text: "무난한 하루지만, 무언가 배우는 날이 될 거예요." },
+      { grade: "🌕", text: "작은 성취가 쌓이면 큰 성과가 됩니다." },
+      { grade: "🌕", text: "의외의 곳에서 좋은 소식이 들릴지도 몰라요." },
+      { grade: "🌑", text: "오늘은 휴식이 필요해요. 무리하지 마세요." },
+      { grade: "🌑", text: "조금 느리더라도 괜찮아요. 나만의 속도를 지켜요." },
+      { grade: "🌑", text: "생각보다 결과가 늦을 수 있어요. 기다림도 용기예요." }
+    ];
+
+    let fortuneShown = false;
+
+    function showFortune() {
+      if (fortuneShown) return;
+      fortuneShown = true;
+      const pick = fortunes[Math.floor(Math.random() * fortunes.length)];
+      document.getElementById("fortuneText").innerText = `${pick.grade} ${pick.text}`;
+      document.getElementById("fortuneResult").style.display = "block";
+    }
+
+    function shareToX() {
+      const text = document.getElementById("fortuneText").innerText;
+      const url = encodeURIComponent("https://your-site-link.com");
+      const tweetText = encodeURIComponent("[쫀쫀이 오늘의 운세] " + text);
+      window.open(`https://twitter.com/intent/tweet?text=${tweetText}&url=${url}`, '_blank');
+    }
+  </script>
+<!-- 🧡 쫀쫀이 추천템 -->
+<div style="margin-top: 40px; padding: 20px; background: #fff9f0; border: 2px dashed #ffa500; border-radius: 10px; max-width: 600px; margin-left: auto; margin-right: auto; font-family: 'Noto Sans KR', sans-serif;">
+  <h3 style="font-size: 1.3em; color: #ff6600; margin-bottom: 15px;">🧡 쫀쫀이가 몰래 아껴둔 꿀템</h3>
+
+  <p style="margin-bottom: 12px;">
+    💡 <strong>무드등</strong><br>
+    <a href="https://link.coupang.com/a/cormpt" target="_blank" style="color: #3388cc; text-decoration: underline;">
+      쫀쫀이랑 밤샘작업 감성 ON 🌙
+    </a>
+  </p>
+
+  <p style="margin-bottom: 12px;">
+    🎧 <strong>노이즈캔슬링 이어폰</strong><br>
+    <a href="https://link.coupang.com/a/corno8" target="_blank" style="color: #3388cc; text-decoration: underline;">
+      압축하면서 딴 세상 가기 가능 😌
+    </a>
+  </p>
+
+  <p style="margin-bottom: 0;">
+    🎨 <strong>컬러 차트북</strong><br>
+    <a href="https://link.coupang.com/a/cornyb" target="_blank" style="color: #3388cc; text-decoration: underline;">
+      배색 고를 때, 나만 없어 색감 감각...? 그럴 땐 요거!
+    </a>
+  </p>
+</div>
+<!-- 🧡 /쫀쫀이 추천템 -->
+
+</body>
+</html>
