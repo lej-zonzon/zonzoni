@@ -4,16 +4,18 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>쫀쫀이 이미지 압축기</title>
-  <!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-NJJT1Y22HZ"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
 
-  gtag('config', 'G-NJJT1Y22HZ');
-</script>
+  <!-- GA 태그 -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-NJJTIY22HZ"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-NJJTIY22HZ');
+  </script>
+
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
   <style>
     body {
       font-family: 'Noto Sans KR', sans-serif;
@@ -108,7 +110,8 @@
 
   <div class="upload-box">
     <label for="imageInput">파일 선택</label>
-    <input type="file" id="imageInput" accept="image/*" multiple>
+    <input type="file" id="imageInput" accept="image/*" multiple
+      onclick="gtag('event', '파일선택_클릭', {event_category: '버튼', event_label: '이미지 선택하기'});">
     <span id="fileCount">선택된 파일 없음</span>
   </div>
 
@@ -128,25 +131,52 @@
     쫀쫀이는 어떤 이미지도 저장하지 않아요.
   </div>
 
-  <!-- 압축 완료 메시지 -->
   <div id="completeMessage" class="result-box">✅ 압축된 ZIP 다운로드가 완료되었습니다!</div>
 
-  <!-- 다운로드 버튼 -->
   <div id="downloadWrapper" class="button-group" style="display:none;">
-    <button class="btn btn-orange" id="downloadBtn" onclick="downloadZip()">
+    <button class="btn btn-orange" id="downloadBtn" onclick="downloadZip(); gtag('event', '압축다운로드_클릭', {event_category: '버튼', event_label: '압축된 ZIP 다운로드'});">
       📦 압축된 이미지 ZIP 다운로드
     </button>
   </div>
 
-  <!-- 운세 버튼은 항상 아래 고정 -->
   <div class="button-group">
-    <button class="btn btn-blue" onclick="showFortune()">🔮 오늘의 운세 보기</button>
+    <button class="btn btn-blue" onclick="showFortune(); gtag('event', '운세보기_클릭', {event_category: '버튼', event_label: '오늘의 운세'});">🔮 오늘의 운세 보기</button>
   </div>
 
   <div class="result-box" id="fortuneResult">
     <div id="fortuneText"></div>
-    <button class="share-btn" onclick="shareToX()">X (트위터)에 공유하기</button>
+    <button class="share-btn" onclick="shareToX(); gtag('event', '운세공유_클릭', {event_category: '버튼', event_label: 'X공유'});">X (트위터)에 공유하기</button>
   </div>
+
+  <!-- 🧡 쫀쫀이 추천템 -->
+  <div style="margin-top: 40px; padding: 20px; background: #fff9f0; border: 2px dashed #ffa500; border-radius: 10px; max-width: 600px; margin-left: auto; margin-right: auto; font-family: 'Noto Sans KR', sans-serif;">
+    <h3 style="font-size: 1.3em; color: #ff6600; margin-bottom: 15px;">🧡 쫀쫀이가 몰래 아껴둔 꿀템</h3>
+
+    <p style="margin-bottom: 12px;">
+      💡 <strong>무드등</strong><br>
+      <a href="https://link.coupang.com/a/cormpt" target="_blank" style="color: #3388cc; text-decoration: underline;"
+         onclick="gtag('event', '추천템_클릭', {event_category: '쿠팡링크', event_label: '무드등'});">
+        쫀쫀이랑 밤샘작업 감성 ON 🌙
+      </a>
+    </p>
+
+    <p style="margin-bottom: 12px;">
+      🎧 <strong>노이즈캔슬링 이어폰</strong><br>
+      <a href="https://link.coupang.com/a/corno8" target="_blank" style="color: #3388cc; text-decoration: underline;"
+         onclick="gtag('event', '추천템_클릭', {event_category: '쿠팡링크', event_label: '노이즈캔슬링 이어폰'});">
+        압축하면서 딴 세상 가기 가능 😌
+      </a>
+    </p>
+
+    <p style="margin-bottom: 0;">
+      🎨 <strong>컬러 차트북</strong><br>
+      <a href="https://link.coupang.com/a/cornyb" target="_blank" style="color: #3388cc; text-decoration: underline;"
+         onclick="gtag('event', '추천템_클릭', {event_category: '쿠팡링크', event_label: '컬러 차트북'});">
+        배색 고를 때, 나만 없어 색감 감각...? 그럴 땐 요거!
+      </a>
+    </p>
+  </div>
+  <!-- 🧡 /쫀쫀이 추천템 -->
 
   <script>
     const input = document.getElementById("imageInput");
@@ -163,8 +193,6 @@
       selectedFiles = Array.from(input.files);
       const count = selectedFiles.length;
       fileCount.innerText = count === 0 ? "선택된 파일 없음" : `파일 ${count}개 선택됨`;
-
-      // 상태 초기화
       completeMessage.style.display = "none";
       downloadWrapper.style.display = count > 0 ? "block" : "none";
     });
@@ -221,7 +249,6 @@
       a.click();
       a.remove();
 
-      // 메시지 표시 & 버튼 제거
       completeMessage.style.display = "block";
       downloadWrapper.style.display = "none";
     }
@@ -255,32 +282,5 @@
       window.open(`https://twitter.com/intent/tweet?text=${tweetText}&url=${url}`, '_blank');
     }
   </script>
-<!-- 🧡 쫀쫀이 추천템 -->
-<div style="margin-top: 40px; padding: 20px; background: #fff9f0; border: 2px dashed #ffa500; border-radius: 10px; max-width: 600px; margin-left: auto; margin-right: auto; font-family: 'Noto Sans KR', sans-serif;">
-  <h3 style="font-size: 1.3em; color: #ff6600; margin-bottom: 15px;">🧡 쫀쫀이가 몰래 아껴둔 꿀템</h3>
-
-  <p style="margin-bottom: 12px;">
-    💡 <strong>무드등</strong><br>
-    <a href="https://link.coupang.com/a/cormpt" target="_blank" style="color: #3388cc; text-decoration: underline;">
-      쫀쫀이랑 밤샘작업 감성 ON 🌙
-    </a>
-  </p>
-
-  <p style="margin-bottom: 12px;">
-    🎧 <strong>노이즈캔슬링 이어폰</strong><br>
-    <a href="https://link.coupang.com/a/corno8" target="_blank" style="color: #3388cc; text-decoration: underline;">
-      압축하면서 딴 세상 가기 가능 😌
-    </a>
-  </p>
-
-  <p style="margin-bottom: 0;">
-    🎨 <strong>컬러 차트북</strong><br>
-    <a href="https://link.coupang.com/a/cornyb" target="_blank" style="color: #3388cc; text-decoration: underline;">
-      배색 고를 때, 나만 없어 색감 감각...? 그럴 땐 요거!
-    </a>
-  </p>
-</div>
-<!-- 🧡 /쫀쫀이 추천템 -->
-
 </body>
 </html>
